@@ -1,0 +1,8 @@
+flask
+flask-cors
+kokoro
+numpy
+openai
+sounddevice
+torch
+Flask-Squeeze
