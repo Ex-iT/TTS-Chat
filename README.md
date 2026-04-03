@@ -1,4 +1,4 @@
-# TTS Chat Assistant (LM Studio + Kokoro)
+# TTS Chat (LM Studio + Kokoro)
 
 This is a modular Flask application that provides a modern chat interface powered by an [LM Studio](https://lmstudio.ai/) backend. It seamlessly integrates with [Kokoro](https://github.com/hexgrad/Kokoro) to synthesize high-quality text-to-speech for AI replies. The `web/` frontend communicates with a flexible backend API that provides text generation, model discovery, and speech synthesis.
 
