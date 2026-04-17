@@ -53,13 +53,14 @@ def get_chat_completion(messages: List[dict], model_name: str, temperature: floa
     if not messages:
         raise ValueError("messages array is required")
 
-    messages_to_send = messages.copy()
-    
+    # Deep copy to avoid mutating the caller's message dicts
+    messages_to_send = [msg.copy() for msg in messages]
+
     if reminder_prompt:
-        if messages_to_send[0].get("role") == "system":
-            messages_to_send[0]["content"] += f"\n\n[REMINDER]: {reminder_prompt}"
-        else:
-            messages_to_send.insert(0, {"role": "system", "content": f"[REMINDER]: {reminder_prompt}"})
+        # Insert as a system message just before the last user message
+        # so it sits fresh in the LLM's attention window
+        insert_idx = len(messages_to_send) - 1
+        messages_to_send.insert(insert_idx, {"role": "system", "content": reminder_prompt})
 
     completion = client.chat.completions.create(
         model=model_name,
@@ -68,3 +69,32 @@ def get_chat_completion(messages: List[dict], model_name: str, temperature: floa
         stream=False
     )
     return completion.choices[0].message.content or ""
+
+
+_REMINDER_GEN_PROMPT = """You are a writing assistant. Given the system prompt below, distill it into a short, punchy reminder (2-4 sentences max) that an AI can refer to mid-conversation to stay on track.
+
+Focus on:
+- The character's name, personality, and speaking style
+- Key behavioral rules or constraints
+- The setting or scenario if relevant
+
+Do NOT include any preamble or explanation — output ONLY the reminder text itself.
+
+System prompt:
+\"\"\"
+{system_prompt}
+\"\"\""""
+
+
+def generate_reminder_from_prompt(system_prompt: str, model_name: str) -> str:
+    """Ask the LLM to distill a system prompt into a concise reminder."""
+    if not system_prompt.strip():
+        raise ValueError("System prompt is empty")
+
+    completion = client.chat.completions.create(
+        model=model_name,
+        messages=[{"role": "user", "content": _REMINDER_GEN_PROMPT.format(system_prompt=system_prompt)}],
+        temperature=0.4,
+        stream=False
+    )
+    return (completion.choices[0].message.content or "").strip()

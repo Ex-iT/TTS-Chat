@@ -88,10 +88,11 @@
           <!-- Reminder -->
           <div class="settings-group">
             <span class="settings-group__label">Reminder Prompt <span class="settings-hint">(injected after token threshold)</span></span>
-            <textarea id="reminder-prompt-input" class="settings-textarea" rows="2" placeholder="e.g. Remember: keep responses concise and TTS-friendly."></textarea>
+            <textarea id="reminder-prompt-input" class="settings-textarea" rows="2" placeholder="e.g. Stay in character as {{char}}. Respond with dialogue and actions."></textarea>
             <div class="settings-inline">
               <label for="reminder-threshold-input">Token threshold</label>
               <input type="number" id="reminder-threshold-input" min="0" step="100" value="2000" />
+              <button type="button" id="generate-reminder-btn" class="btn ghost small" title="Auto-generate a reminder from the system prompt" style="margin-left: auto;">Generate ✨</button>
             </div>
           </div>
 

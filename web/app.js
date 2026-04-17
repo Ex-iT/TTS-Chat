@@ -37,6 +37,7 @@ const elements = {
   closeSystemPromptBtn: document.getElementById("close-system-prompt"),
   reminderPromptInput: document.getElementById("reminder-prompt-input"),
   reminderThresholdInput: document.getElementById("reminder-threshold-input"),
+  generateReminderBtn: document.getElementById("generate-reminder-btn"),
   ttsToggle: document.getElementById("tts-toggle"),
   // Global Settings dialog
   globalSettingsBtn: document.getElementById("global-settings-btn"),
@@ -233,12 +234,6 @@ function bindSettingsEvents() {
     elements.settingsDialog.close();
   });
 
-  elements.settingsDialog.addEventListener("click", (event) => {
-    if (event.target === elements.settingsDialog) {
-      elements.settingsDialog.close();
-    }
-  });
-
   // --- Global Settings ---
   elements.globalSettingsBtn.addEventListener("click", () => {
     elements.globalSettingsDialog.showModal();
@@ -267,6 +262,12 @@ function bindSettingsEvents() {
     chat.ttsEnabled = elements.ttsToggle.checked;
     saveState();
     updateControls();
+  });
+
+  elements.generateReminderBtn.addEventListener("click", generateReminderFromSystemPrompt);
+
+  elements.systemPromptInput.addEventListener("input", () => {
+    elements.generateReminderBtn.disabled = !elements.systemPromptInput.value.trim();
   });
 
   // Avatar Upload Logic
@@ -388,6 +389,7 @@ function renderSettingsForm() {
   elements.reminderPromptInput.value = chat.reminderPrompt || "";
   elements.reminderThresholdInput.value = chat.reminderThreshold ?? DEFAULT_REMINDER_THRESHOLD;
   elements.ttsToggle.checked = chat.ttsEnabled !== false;
+  elements.generateReminderBtn.disabled = !(systemMessage && systemMessage.content.trim());
 
   const botAvatar = chat.botAvatar;
   elements.botAvatarPreview.innerHTML = botAvatar ? `<img src="${botAvatar}" />` : DEFAULT_BOT_SVG;
@@ -631,12 +633,47 @@ function applySystemPrompt() {
   setStatus("Settings applied.", false);
 }
 
+async function generateReminderFromSystemPrompt() {
+  const systemPrompt = elements.systemPromptInput.value.trim();
+  if (!systemPrompt) {
+    setStatus("Write a system prompt first.");
+    return;
+  }
+  if (!state.model) {
+    setStatus("No LM Studio model available.");
+    return;
+  }
+
+  const btn = elements.generateReminderBtn;
+  const originalText = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = "Generating…";
+
+  try {
+    const response = await fetch("/api/generate-reminder", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ system_prompt: systemPrompt, model: state.model }),
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.error || "Failed to generate reminder");
+    }
+    elements.reminderPromptInput.value = data.reminder || "";
+    setStatus("Reminder generated.", false);
+  } catch (error) {
+    console.error(error);
+    setStatus(error.message || "Failed to generate reminder");
+  } finally {
+    btn.disabled = false;
+    btn.textContent = originalText;
+  }
+}
+
 function estimateTokenCount(chat) {
   let totalChars = 0;
   for (const msg of chat.messages) {
-    if (msg.role === "user" || msg.role === "assistant") {
-      totalChars += (msg.content || "").length;
-    }
+    totalChars += (msg.content || "").length;
   }
   return Math.round(totalChars / 4);
 }

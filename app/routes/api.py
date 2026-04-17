@@ -1,6 +1,6 @@
 from flask import Blueprint, jsonify, request, current_app
 
-from app.services.llm_service import available_models, resolve_model_name, get_chat_completion
+from app.services.llm_service import available_models, resolve_model_name, get_chat_completion, generate_reminder_from_prompt
 from app.services.tts_service import synthesize_audio, get_voice_info, voice_catalog, DEFAULT_VOICE
 
 bp = Blueprint("api", __name__, url_prefix="/api")
@@ -81,3 +81,21 @@ def list_voices():
         for name, meta in sorted(voice_catalog.items())
     ]
     return jsonify({"voices": voices, "default": DEFAULT_VOICE})
+
+@bp.route("/generate-reminder", methods=["POST"])
+def generate_reminder():
+    payload = request.get_json(force=True) or {}
+    system_prompt = payload.get("system_prompt", "")
+    
+    try:
+        model_name = resolve_model_name(payload.get("model"))
+        reminder = generate_reminder_from_prompt(system_prompt, model_name)
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
+    except RuntimeError as exc:
+        return jsonify({"error": str(exc)}), 503
+    except Exception as exc:
+        current_app.logger.error("Reminder generation failure: %s", exc)
+        return jsonify({"error": str(exc)}), 500
+
+    return jsonify({"reminder": reminder})

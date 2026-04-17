@@ -1171,7 +1171,7 @@ body {
   color: var(--text-secondary);
 }
 
-.btn.ghost:hover {
+.btn.ghost:hover:not(:disabled) {
   background: var(--bg-hover);
   color: var(--text-primary);
 }
