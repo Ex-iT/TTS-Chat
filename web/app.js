@@ -1083,16 +1083,17 @@ function branchChatFromMessage(messageId) {
 
   const newChat = {
     id: newId(),
-    title: chat.title,
+    title: "New chat",
     color: generateRandomSoftColor(),
     createdAt: new Date().toISOString(),
     ttsEnabled: chat.ttsEnabled,
+    botAvatar: chat.botAvatar,
+    userAvatar: chat.userAvatar,
     reminderPrompt: chat.reminderPrompt,
     reminderThreshold: chat.reminderThreshold,
     messages: chat.messages.slice(0, index + 1).map((message) => ({ ...message })),
   };
 
-  updateChatTitle(newChat);
   state.chats.unshift(newChat);
   state.activeChatId = newChat.id;
   saveState();
